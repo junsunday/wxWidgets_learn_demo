@@ -88,19 +88,17 @@ public:
     virtual bool OnInit();
 };
 
-// Define a new frame type: this is going to be our main frame
+
 class MyFrame : public wxFrame
 {
 public:
-    // ctor(s)
+    //
     MyFrame(const wxString& title, const wxPoint& pos, const wxSize& size,
             long style = wxDEFAULT_FRAME_STYLE);
 
     // event handlers (these functions should _not_ be virtual)
     void OnQuit(wxCommandEvent& event);
     void OnFromPoint(wxCommandEvent& event);
-    void OnFullScreen(wxCommandEvent& event);
-    void OnContentProtection(wxCommandEvent& event);
     void OnAbout(wxCommandEvent& event);
 
 #if wxUSE_DISPLAY
@@ -115,8 +113,8 @@ public:
     void OnLeftClick(wxMouseEvent& event);
 
 private:
-    // Fill m_book with the information about all the displays.
-    void PopuplateWithDisplayInfo();
+    //选项卡界面填充信息
+    void Bookctrl_Info();
 
 #if wxUSE_DISPLAY
     // convert video mode to textual description
@@ -145,41 +143,34 @@ public:
 // constants
 // ----------------------------------------------------------------------------
 
-// IDs for the controls and the menu commands
+//分配事件ID
 enum
 {
-    // menu items
-    Display_FromPoint = wxID_HIGHEST + 1,
-    Display_FullScreen,
-    Display_ContentProtection_None,
-    Display_ContentProtection_Enable,
+    //一级菜单项
+    Display_FromPoint = wxID_HIGHEST + 1,  //6000
+    //二级菜单项
+    wxID_Submenu,
+    wxID_Sub_first,
+    wxID_Sub_second,
 
-    // controls
-    Display_ChangeMode,
+
+    //命令项
+    Display_ChangeMode,                    //6004
     Display_ResetMode,
     Display_CurrentMode,
+    Display_Update,
 
-
-    // it is important for the id corresponding to the "About" command to have
-    // this standard value as otherwise it won't be handled properly under Mac
-    // (where it is special and put into the "Apple" menu)
+   //特定项
     Display_Quit = wxID_EXIT,
     Display_About = wxID_ABOUT
+
 };
 
-// ----------------------------------------------------------------------------
-// event tables and other macros for wxWidgets
-// ----------------------------------------------------------------------------
 
-// the event tables connect the wxWidgets events with the functions (event
-// handlers) which process them. It can be also done at run-time, but for the
-// simple menu events like this the static method is much simpler.
+//事件表(事件ID与处理函数相匹配)
 wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_MENU(Display_Quit,  MyFrame::OnQuit)
     EVT_MENU(Display_FromPoint,  MyFrame::OnFromPoint)
-    EVT_MENU(Display_FullScreen, MyFrame::OnFullScreen)
-    EVT_MENU(Display_ContentProtection_None, MyFrame::OnContentProtection)
-    EVT_MENU(Display_ContentProtection_Enable, MyFrame::OnContentProtection)
     EVT_MENU(Display_About, MyFrame::OnAbout)
 
 #if wxUSE_DISPLAY
@@ -220,81 +211,81 @@ bool MyApp::OnInit()
 MyFrame::MyFrame(const wxString& title, const wxPoint& pos, const wxSize& size, long style)
        : wxFrame(NULL, wxID_ANY, title, pos, size, style)
 {
-    // set the frame icon
-    SetIcon(wxICON(sample));
+    //设置图标
+    wxImage::AddHandler(new wxPNGHandler);
+    SetIcon(wxICON("testSheep.png", wxBitmapType_png));
+    //SetIcon(wxICON(sample));
 
 #if wxUSE_MENUS
-    // create a menu bar
-    wxMenu *menuDisplay = new wxMenu;
-    menuDisplay->Append(Display_FromPoint, _("Find from &point..."));
-    menuDisplay->AppendSeparator();
-    wxMenuItem* const
-        itemFullScreen = new wxMenuItem(menuDisplay,
-                                        Display_FullScreen,
-                                        _("Full &screen\tF12"));
-    itemFullScreen->SetBitmap(
-            wxArtProvider::GetBitmap(wxART_FULL_SCREEN, wxART_MENU)
-        );
+    //创建菜单
+    wxMenu *MyMenu = new wxMenu;
+    MyMenu->Append(Display_FromPoint,wxT("Display&Point"));
+    //添加分隔线
+    MyMenu->AppendSeparator();
+    //创建下级菜单
+    wxMenu* MySubMenu = new wxMenu();
+    //添加菜单项
+    MySubMenu->Append(wxID_Sub_first, wxT("this is first!\tF&1"));
+    MySubMenu->Append(wxID_Sub_second, wxT("this is second!\tF&2"));
+    //上下级菜单衔接
+    MyMenu->Append(wxID_Submenu, wxT("&Next Content"), MySubMenu);
 
-    wxMenu* contentProtectionMenu = new wxMenu();
-    contentProtectionMenu->Append(Display_ContentProtection_None, _("&None"), "", wxITEM_RADIO);
-    contentProtectionMenu->Check(Display_ContentProtection_None, true);
-    contentProtectionMenu->Append(Display_ContentProtection_Enable, _("&Enabled"), "", wxITEM_RADIO);
-    menuDisplay->Append(wxID_ANY, _("Content &Protection"), contentProtectionMenu);
+    //分隔线
+    MyMenu->AppendSeparator();
+    //添加退出事件
+    MyMenu->Append(Display_Quit, _("E&xit\tAlt-X"), _("Quit this program"));
 
-    menuDisplay->Append(itemFullScreen);
-    menuDisplay->AppendSeparator();
-    menuDisplay->Append(Display_Quit, _("E&xit\tAlt-X"), _("Quit this program"));
-
-    // the "About" item should be in the help menu
+    //创建help菜单
     wxMenu *helpMenu = new wxMenu;
     helpMenu->Append(Display_About, _("&About\tF1"), _("Show about dialog"));
-
-    // now append the freshly created menu to the menu bar...
+    helpMenu->Append(Display_Update, wxT("&Update\tF2"));
+    //创建菜单栏
     wxMenuBar *menuBar = new wxMenuBar();
-    menuBar->Append(menuDisplay, _("&Display"));
+    menuBar->Append(MyMenu, _("&Display"));
     menuBar->Append(helpMenu, _("&Help"));
 
-    EnableFullScreenView();
 
-    // ... and attach this menu bar to the frame
+    //设置菜单栏
     SetMenuBar(menuBar);
-#endif // wxUSE_MENUS
+#endif //是否使用菜单
 
 #if wxUSE_STATUSBAR
-    // create status bar
+    //创建状态栏
     CreateStatusBar();
-#endif // wxUSE_STATUSBAR
+#endif // 是否使用状态栏
 
-    // create child controls
+    //创建选项卡界面布局
     m_book = new wxBookCtrl(this, wxID_ANY);
-    PopuplateWithDisplayInfo();
+    Bookctrl_Info();
 }
 
-void MyFrame::PopuplateWithDisplayInfo()
+void MyFrame::Bookctrl_Info()
 {
-    const size_t countDpy = wxDisplay::GetCount();
-    for ( size_t nDpy = 0; nDpy < countDpy; nDpy++ )
+    //获取显示器数量
+    const size_t display_count = wxDisplay::GetCount();
+    for ( size_t n = 0; n < display_count; n++ )
     {
-        wxDisplay display(nDpy);
-
+        //实例化对象
+        wxDisplay display(n);
+        //创建面板
         wxWindow *page = new wxPanel(m_book, wxID_ANY);
-
-        // create 2 column flex grid sizer with growable 2nd column
-        wxFlexGridSizer *sizer = new wxFlexGridSizer(2, 10, 20);
+        //创建网格布局管理器（4列，15垂直间距，20水平间距）
+        wxFlexGridSizer *sizer = new wxFlexGridSizer(4, 15, 20);
+        //1行为可增长列，等比例增长（default：0）
         sizer->AddGrowableCol(1);
-
+        //获取显示器的几何信息
         const wxRect r(display.GetGeometry());
-        sizer->Add(new wxStaticText(page, wxID_ANY, "Origin: "));
+        //创建文本并添加至布局管理器
+        sizer->Add(new wxStaticText(page, wxID_ANY, wxT("原点: ")));
         sizer->Add(new wxStaticText
                        (
                         page,
                         wxID_ANY,
-                        wxString::Format("(%d, %d)",
-                                         r.x, r.y)
-                       ));
+                        wxString::Format("(%d, %d)",r.x, r.y)
+                       )
+                  );
 
-        sizer->Add(new wxStaticText(page, wxID_ANY, "Size: "));
+        sizer->Add(new wxStaticText(page, wxID_ANY, "尺寸: "));
         sizer->Add(new wxStaticText
                        (
                         page,
@@ -302,9 +293,9 @@ void MyFrame::PopuplateWithDisplayInfo()
                         wxString::Format("(%d, %d)",
                                          r.width, r.height)
                        ));
-
+        //获取实际区域并创建对象
         const wxRect rc(display.GetClientArea());
-        sizer->Add(new wxStaticText(page, wxID_ANY, "Client area: "));
+        sizer->Add(new wxStaticText(page, wxID_ANY, "实际区域: "));
         sizer->Add(new wxStaticText
                        (
                         page,
@@ -312,29 +303,29 @@ void MyFrame::PopuplateWithDisplayInfo()
                         wxString::Format("(%d, %d)-(%d, %d)",
                                          rc.x, rc.y, rc.width, rc.height)
                        ));
-
-        sizer->Add(new wxStaticText(page, wxID_ANY, "Resolution: "));
+        //获取显示器分辨率并创建对象
         const wxSize ppi = display.GetPPI();
+        sizer->Add(new wxStaticText(page, wxID_ANY, "分辨率: "));
         sizer->Add(new wxStaticText(page, wxID_ANY,
                                     wxString::Format("%d*%d", ppi.x, ppi.y)));
-
-        sizer->Add(new wxStaticText(page, wxID_ANY, "Depth: "));
+        //获取显示器位深并创建对象
+        sizer->Add(new wxStaticText(page, wxID_ANY, "位深: "));
         sizer->Add(new wxStaticText(page, wxID_ANY,
                                     wxString::Format("%d", display.GetDepth())));
-
-        sizer->Add(new wxStaticText(page, wxID_ANY, "Scaling: "));
+        //获取缩放并创建对象
+        sizer->Add(new wxStaticText(page, wxID_ANY, "缩放: "));
         sizer->Add(new wxStaticText(page, wxID_ANY,
                                     wxString::Format("%.2f",
                                                      display.GetScaleFactor())));
-
-        sizer->Add(new wxStaticText(page, wxID_ANY, "Name: "));
+        //获取缩放并创建对象
+        sizer->Add(new wxStaticText(page, wxID_ANY, "名称: "));
         sizer->Add(new wxStaticText(page, wxID_ANY, display.GetName()));
-
-        sizer->Add(new wxStaticText(page, wxID_ANY, "Primary: "));
+        //获取缩放并创建对象
+        sizer->Add(new wxStaticText(page, wxID_ANY, "主屏: "));
         sizer->Add(new wxStaticText(page, wxID_ANY,
-                                    display.IsPrimary() ? "yes" : "no"));
+                                    display.IsPrimary() ? "Yes" : "No"));
 
-        // add it to another sizer to have borders around it and button below
+        //
         wxSizer *sizerTop = new wxBoxSizer(wxVERTICAL);
         sizerTop->Add(sizer, wxSizerFlags(1).Expand().DoubleBorder());
 
@@ -379,7 +370,7 @@ void MyFrame::PopuplateWithDisplayInfo()
         page->SetSizer(sizerTop);
         page->Layout();
 
-        m_book->AddPage(page, wxString::Format("Display %zu", nDpy + 1));
+        m_book->AddPage(page, wxString::Format("Display %zu", n + 1));
     }
 
     SetClientSize(m_book->GetBestSize());
@@ -418,8 +409,8 @@ void MyFrame::OnQuit(wxCommandEvent& WXUNUSED(event))
 
 void MyFrame::OnAbout(wxCommandEvent& WXUNUSED(event))
 {
-    wxMessageBox("Demo program for wxDisplay class.\n\n(c) 2003-2006 Vadim Zeitlin",
-                 "About Display Sample",
+    wxMessageBox("Hello wxWidgets!\n\n 2024.7.10 Junday",
+                 "This is About",
                  wxOK | wxICON_INFORMATION,
                  this);
 }
@@ -427,44 +418,11 @@ void MyFrame::OnAbout(wxCommandEvent& WXUNUSED(event))
 void MyFrame::OnFromPoint(wxCommandEvent& WXUNUSED(event))
 {
 #if wxUSE_STATUSBAR
-    SetStatusText("Press the mouse anywhere...");
-#endif // wxUSE_STATUSBAR
-
+    SetStatusText("Now,click somewhere");
+#endif 
     CaptureMouse();
 }
 
-void MyFrame::OnFullScreen(wxCommandEvent& WXUNUSED(event))
-{
-    ShowFullScreen(!IsFullScreen());
-}
-
-void MyFrame::OnContentProtection(wxCommandEvent& event)
-{
-    wxContentProtection contentProtection;
-    switch (event.GetId())
-    {
-    case Display_ContentProtection_Enable:
-        contentProtection = wxCONTENT_PROTECTION_ENABLED;
-        break;
-    default:
-        contentProtection = wxCONTENT_PROTECTION_NONE;
-    }
-
-    if (SetContentProtection(contentProtection))
-    {
-        switch (GetContentProtection())
-        {
-        case wxCONTENT_PROTECTION_ENABLED:
-            wxLogInfo("The contents of this window should now NOT be visible in screen captures.");
-            break;
-        case wxCONTENT_PROTECTION_NONE:
-            wxLogInfo("The contents of this window should now be visible in screen captures.");
-            break;
-        }
-    }
-    else
-        wxLogError("Content protection could not be changed");
-}
 
 #if wxUSE_DISPLAY
 
@@ -523,7 +481,7 @@ void MyFrame::OnLeftClick(wxMouseEvent& event)
 void MyFrame::OnDisplayChanged(wxDisplayChangedEvent& event)
 {
     m_book->DeleteAllPages();
-    PopuplateWithDisplayInfo();
+    Bookctrl_Info();
 
     wxLogStatus(this, "Display resolution was changed.");
 
