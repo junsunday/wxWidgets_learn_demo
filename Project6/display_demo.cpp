@@ -96,7 +96,7 @@ public:
     MyFrame(const wxString& title, const wxPoint& pos, const wxSize& size,
             long style = wxDEFAULT_FRAME_STYLE);
 
-    // event handlers (these functions should _not_ be virtual)
+    
     void OnQuit(wxCommandEvent& event);
     void OnFromPoint(wxCommandEvent& event);
     void OnFirstEvent(wxCommandEvent& event);
@@ -109,7 +109,7 @@ public:
     void OnResetMode(wxCommandEvent& event);
 
     void OnDisplayChanged(wxDisplayChangedEvent& event);
-#endif // wxUSE_DISPLAY
+#endif 
 
     void OnDPIChanged(wxDPIChangedEvent& event);
 
@@ -120,19 +120,14 @@ private:
     void Bookctrl_Info();
 
 #if wxUSE_DISPLAY
-    // convert video mode to textual description
     wxString VideoModeToText(const wxVideoMode& mode);
-#endif // wxUSE_DISPLAY
-
-    // GUI controls
+#endif 
     wxBookCtrl *m_book;
-
-    // any class wishing to process wxWidgets events must use this macro
     wxDECLARE_EVENT_TABLE();
 };
 
 #if wxUSE_DISPLAY
-// Client data class for the choice control containing the video modes
+
 class MyVideoModeClientData : public wxClientData
 {
 public:
@@ -140,11 +135,7 @@ public:
 
     const wxVideoMode mode;
 };
-#endif // wxUSE_DISPLAY
-
-// ----------------------------------------------------------------------------
-// constants
-// ----------------------------------------------------------------------------
+#endif 
 
 //∑÷≈‰ ¬º˛ID
 enum
