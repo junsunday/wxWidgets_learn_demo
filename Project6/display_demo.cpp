@@ -99,7 +99,10 @@ public:
     // event handlers (these functions should _not_ be virtual)
     void OnQuit(wxCommandEvent& event);
     void OnFromPoint(wxCommandEvent& event);
+    void OnFirstEvent(wxCommandEvent& event);
+    void OnSecondEvent(wxCommandEvent& event);
     void OnAbout(wxCommandEvent& event);
+    void OnUpdate(wxCommandEvent& event);
 
 #if wxUSE_DISPLAY
     void OnChangeMode(wxCommandEvent& event);
@@ -168,14 +171,16 @@ enum
 
 
 //事件表(事件ID与处理函数相匹配)
-wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
-    EVT_MENU(Display_Quit,  MyFrame::OnQuit)
-    EVT_MENU(Display_FromPoint,  MyFrame::OnFromPoint)
-    EVT_MENU(Display_About, MyFrame::OnAbout)
-
+wxBEGIN_EVENT_TABLE(MyFrame,wxFrame)
+    EVT_MENU(Display_Quit,MyFrame::OnQuit)
+    EVT_MENU(Display_FromPoint,MyFrame::OnFromPoint)
+    EVT_MENU(wxID_Sub_first,MyFrame::OnFirstEvent)
+    EVT_MENU(wxID_Sub_second,MyFrame::OnSecondEvent)
+    EVT_MENU(Display_About,MyFrame::OnAbout)
+    EVT_MENU(Display_Update,MyFrame::OnUpdate)
 #if wxUSE_DISPLAY
-    EVT_CHOICE(Display_ChangeMode, MyFrame::OnChangeMode)
-    EVT_BUTTON(Display_ResetMode, MyFrame::OnResetMode)
+    EVT_CHOICE(Display_ChangeMode,MyFrame::OnChangeMode)
+    EVT_BUTTON(Display_ResetMode,MyFrame::OnResetMode)
 
     EVT_DISPLAY_CHANGED(MyFrame::OnDisplayChanged)
 #endif // wxUSE_DISPLAY
@@ -238,7 +243,7 @@ MyFrame::MyFrame(const wxString& title, const wxPoint& pos, const wxSize& size, 
     //创建help菜单
     wxMenu *helpMenu = new wxMenu;
     helpMenu->Append(Display_About, _("&About\tF1"), _("Show about dialog"));
-    helpMenu->Append(Display_Update, wxT("&Update\tF2"));
+    helpMenu->Append(Display_Update, wxT("&Update\tF2"),wxT("Show more detail"));
     //创建菜单栏
     wxMenuBar *menuBar = new wxMenuBar();
     menuBar->Append(MyMenu, _("&Display"));
@@ -323,25 +328,17 @@ void MyFrame::Bookctrl_Info()
         //获取缩放并创建对象
         sizer->Add(new wxStaticText(page, wxID_ANY, "主屏: "));
         sizer->Add(new wxStaticText(page, wxID_ANY,
-                                    display.IsPrimary() ? "Yes" : "No"));
+                                    display.IsPrimary() ? wxT("是" ):wxT( "否")));
 
-        //
+        //布局管理对象
         wxSizer *sizerTop = new wxBoxSizer(wxVERTICAL);
         sizerTop->Add(sizer, wxSizerFlags(1).Expand().DoubleBorder());
 
 #if wxUSE_DISPLAY
+        //下拉式选项
         wxChoice *choiceModes = new wxChoice(page, Display_ChangeMode);
-
         {
-            // Speed up the Append() loop below by foregoing the repeated resizing
-            // of the choice dropdown via repeated calls to GetBestSize() which
-            // happens deep inside the Append() call chain and executes another
-            // inner loop calling SendMessage() to get the control contents.
-            //
-            // As there can be a couple of hundreds of video modes, this saves
-            // many thousands of such calls and so has a very noticeable effect.
             wxWindowUpdateLocker lockUpdates(choiceModes);
-
             const wxArrayVideoModes modes = display.GetModes();
             const size_t countModes = modes.GetCount();
             for ( size_t nMode = 0; nMode < countModes; nMode++ )
@@ -351,28 +348,28 @@ void MyFrame::Bookctrl_Info()
                 choiceModes->Append(VideoModeToText(mode),
                     new MyVideoModeClientData(mode));
             }
-        } // Destroy wxWindowUpdateLocker to finally resize the window now.
+        } 
 
         const wxString currentMode = VideoModeToText(display.GetCurrentMode());
         choiceModes->SetStringSelection(currentMode);
 
-        sizer->Add(new wxStaticText(page, wxID_ANY, "&Modes: "),
+        sizer->Add(new wxStaticText(page, wxID_ANY, wxT("&模式: ")),
                    wxSizerFlags().CentreVertical());
         sizer->Add(choiceModes, wxSizerFlags().Expand());
 
-        sizer->Add(new wxStaticText(page, wxID_ANY, "Current: "));
+        sizer->Add(new wxStaticText(page, wxID_ANY, wxT("当前: ")));
         sizer->Add(new wxStaticText(page, Display_CurrentMode, currentMode));
 
-        sizerTop->Add(new wxButton(page, Display_ResetMode, "&Reset mode"),
+        sizerTop->Add(new wxButton(page, Display_ResetMode, wxT("&默认值")),
                       wxSizerFlags().Centre().Border());
-#endif // wxUSE_DISPLAY
-
+#endif 
+        //页面显示
         page->SetSizer(sizerTop);
         page->Layout();
 
-        m_book->AddPage(page, wxString::Format("Display %zu", n + 1));
+        m_book->AddPage(page, wxString::Format(wxT("显示器 %zu"), n + 1));
     }
-
+    //设置尺寸
     SetClientSize(m_book->GetBestSize());
     SetMinSize(GetSize());
 }
@@ -397,24 +394,42 @@ wxString MyFrame::VideoModeToText(const wxVideoMode& mode)
     return s;
 }
 
-#endif // wxUSE_DISPLAY
-
-// event handlers
+#endif 
 
 void MyFrame::OnQuit(wxCommandEvent& WXUNUSED(event))
 {
-    // true is to force the frame to close
     Close(true);
 }
 
 void MyFrame::OnAbout(wxCommandEvent& WXUNUSED(event))
 {
-    wxMessageBox("Hello wxWidgets!\n\n 2024.7.10 Junday",
+    wxMessageBox("Hello wxWidgets!\n\n 2024.7.10 Junsunday",
                  "This is About",
                  wxOK | wxICON_INFORMATION,
                  this);
 }
 
+void MyFrame::OnUpdate(wxCommandEvent& event)
+{
+    wxMessageBox(wxT("获取更多支持，欢迎联系Junsunday！"),
+                 wxT("This is Update"),
+                 wxOK | wxICON_INFORMATION,
+                 this);
+}
+void MyFrame::OnFirstEvent(wxCommandEvent& event)
+{
+    wxMessageBox(wxT("this is first event!!!"), 
+                 wxT("First"), 
+                 wxOK | wxICON_INFORMATION,
+                 this);
+}
+void MyFrame::OnSecondEvent(wxCommandEvent& event)
+{
+    wxMessageBox(wxT("this is second event!!!"),
+                 wxT("Second"),
+                 wxOK | wxICON_INFORMATION,
+                 this);
+}
 void MyFrame::OnFromPoint(wxCommandEvent& WXUNUSED(event))
 {
 #if wxUSE_STATUSBAR
@@ -429,13 +444,11 @@ void MyFrame::OnFromPoint(wxCommandEvent& WXUNUSED(event))
 void MyFrame::OnChangeMode(wxCommandEvent& event)
 {
     wxDisplay dpy(m_book->GetSelection());
-
-    // you wouldn't write this in real code, would you?
     if ( !dpy.ChangeMode(((MyVideoModeClientData *)
                 wxDynamicCast(event.GetEventObject(), wxChoice)->
                     GetClientObject(event.GetInt()))->mode) )
     {
-        wxLogError("Changing video mode failed!");
+        wxLogError(wxT("更改模式失败!"));
     }
 }
 
@@ -446,11 +459,11 @@ void MyFrame::OnResetMode(wxCommandEvent& WXUNUSED(event))
     dpy.ResetMode();
 }
 
-#endif // wxUSE_DISPLAY
+#endif 
 
 void MyFrame::OnDPIChanged(wxDPIChangedEvent& event)
 {
-    wxLogStatus(this, "DPI changed: was %d*%d, now %d*%d",
+    wxLogStatus(this, wxT("DPI: 旧 %d*%d, 新 %d*%d"),
                 event.GetOldDPI().x, event.GetOldDPI().y,
                 event.GetNewDPI().x, event.GetNewDPI().y);
 
@@ -461,15 +474,14 @@ void MyFrame::OnLeftClick(wxMouseEvent& event)
 {
     if ( HasCapture() )
     {
-        // mouse events are in client coords, wxDisplay works in screen ones
         const wxPoint ptScreen = ClientToScreen(event.GetPosition());
         int dpy = wxDisplay::GetFromPoint(ptScreen);
         if ( dpy == wxNOT_FOUND )
         {
-            wxLogError("Mouse clicked outside of display!?");
+            wxLogError(wxT("错误事件！！！"));
         }
 
-        wxLogStatus(this, "Mouse clicked in display %d (at (%d, %d))",
+        wxLogStatus(this, wxT(" 鼠标点击屏幕%d ( 位于(%d, %d))"),
                     dpy, ptScreen.x, ptScreen.y);
 
         ReleaseMouse();
@@ -483,10 +495,10 @@ void MyFrame::OnDisplayChanged(wxDisplayChangedEvent& event)
     m_book->DeleteAllPages();
     Bookctrl_Info();
 
-    wxLogStatus(this, "Display resolution was changed.");
+    wxLogStatus(this, wxT("分辨率已更改！"));
 
     event.Skip();
 }
 
-#endif // wxUSE_DISPLAY
+#endif 
 
